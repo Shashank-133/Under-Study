@@ -1,0 +1,137 @@
+[
+  {
+    "id": "inc-001",
+    "title": "Null user list crashes dashboard",
+    "description": "Dashboard crashes on first load when API returns null instead of an empty array.",
+    "created_at": "2026-03-15T10:30:00Z",
+    "error_signature": {
+      "message": "TypeError: Cannot read property 'map' of undefined",
+      "stack_trace": "at Dashboard.jsx:24\n  at renderWithHooks (react-dom.development.js:14985)",
+      "error_type": "TypeError"
+    },
+    "root_cause": {
+      "category": "null_reference",
+      "description": "API returned null for users field; component assumed an array."
+    },
+    "files": [
+      { "path": "src/components/Dashboard.jsx", "line": 24 }
+    ],
+    "fix_pattern": {
+      "description": "Guard with optional chaining and default to empty array",
+      "code_snippet": "const users = data?.users ?? [];"
+    },
+    "resolved_by": {
+      "name": "Alice Kumar",
+      "email": "alice@team.dev"
+    },
+    "pr": {
+      "number": 142,
+      "url": "https://github.com/team/understudy/pull/142",
+      "title": "fix: null-safe user list in Dashboard"
+    },
+    "similar_to": []
+  },
+  {
+    "id": "inc-002",
+    "title": "CORS blocked on login API",
+    "description": "Frontend login fails in staging because the API does not allow the staging origin.",
+    "created_at": "2026-03-18T14:05:00Z",
+    "error_signature": {
+      "message": "Access to fetch at 'https://api.staging.example.com/login' from origin 'https://app.staging.example.com' has been blocked by CORS policy",
+      "stack_trace": "at fetchLogin (authService.js:18)",
+      "error_type": "CORS"
+    },
+    "root_cause": {
+      "category": "cors_misconfiguration",
+      "description": "Staging frontend origin was missing from API CORS allowlist."
+    },
+    "files": [
+      { "path": "backend/app/main.py", "line": 12 },
+      { "path": "frontend/src/services/authService.js", "line": 18 }
+    ],
+    "fix_pattern": {
+      "description": "Add staging origin to CORS middleware allow_origins",
+      "code_snippet": "allow_origins=[\"https://app.staging.example.com\"]"
+    },
+    "resolved_by": {
+      "name": "Ravi Menon",
+      "email": "ravi@team.dev"
+    },
+    "pr": {
+      "number": 156,
+      "url": "https://github.com/team/understudy/pull/156",
+      "title": "fix: add staging origin to CORS"
+    },
+    "similar_to": [
+      { "incident_id": "inc-001", "score": 0.12 }
+    ]
+  },
+  {
+    "id": "inc-003",
+    "title": "Unhandled promise rejection in profile fetch",
+    "description": "Profile page shows blank state when fetch rejects; error swallowed by missing await.",
+    "created_at": "2026-03-22T09:12:00Z",
+    "error_signature": {
+      "message": "Unhandled promise rejection: TypeError: Cannot read properties of undefined (reading 'avatar')",
+      "stack_trace": "at ProfilePage.jsx:41\n  at async loadProfile (profileApi.js:9)",
+      "error_type": "TypeError"
+    },
+    "root_cause": {
+      "category": "async_error_handling",
+      "description": "Missing try/catch around async fetch; component rendered before data arrived."
+    },
+    "files": [
+      { "path": "src/pages/ProfilePage.jsx", "line": 41 },
+      { "path": "src/api/profileApi.js", "line": 9 }
+    ],
+    "fix_pattern": {
+      "description": "Await fetch inside try/catch and guard render until profile loads",
+      "code_snippet": "try { const profile = await fetchProfile(id); setProfile(profile); } catch (e) { setError(e); }"
+    },
+    "resolved_by": {
+      "name": "Priya Sharma",
+      "email": "priya@team.dev"
+    },
+    "pr": {
+      "number": 163,
+      "url": "https://github.com/team/understudy/pull/163",
+      "title": "fix: handle profile fetch errors"
+    },
+    "similar_to": [
+      { "incident_id": "inc-001", "score": 0.68 }
+    ]
+  },
+  {
+    "id": "inc-004",
+    "title": "Missing env var breaks database connection",
+    "description": "Local dev fails silently when NEO4J_URI is unset; connection returns None.",
+    "created_at": "2026-03-25T16:45:00Z",
+    "error_signature": {
+      "message": "neo4j.exceptions.ServiceUnavailable: Could not connect to neo4j://localhost:7687",
+      "stack_trace": "at get_driver (app/graph/connection.py:22)\n  at seed_graph (scripts/seed.py:15)",
+      "error_type": "ConnectionError"
+    },
+    "root_cause": {
+      "category": "configuration",
+      "description": "Developer copied repo without .env; default URI pointed to localhost."
+    },
+    "files": [
+      { "path": "backend/app/graph/connection.py", "line": 22 },
+      { "path": ".env.example", "line": 1 }
+    ],
+    "fix_pattern": {
+      "description": "Copy .env.example to .env and set AuraDB credentials",
+      "code_snippet": "NEO4J_URI=neo4j+s://xxxx.databases.neo4j.io"
+    },
+    "resolved_by": {
+      "name": "Alice Kumar",
+      "email": "alice@team.dev"
+    },
+    "pr": {
+      "number": 171,
+      "url": "https://github.com/team/understudy/pull/171",
+      "title": "docs: clarify .env setup for Neo4j Aura"
+    },
+    "similar_to": []
+  }
+]

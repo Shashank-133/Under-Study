@@ -78,8 +78,8 @@ export default function IngestionDemoPage({ onNavigateToChat }) {
           <li>Go to <strong>Chat</strong> and query the same error to see it surface.</li>
         </ol>
         <p className="note">
-          Uses local demo storage until Person 2 adds <code className="inline-code">POST /ingest</code> on the
-          backend.
+          Calls backend <code className="inline-code">POST /ingest</code> which extracts
+          structure (Sarvam when keyed) and writes to Neo4j / runtime memory.
         </p>
       </section>
 

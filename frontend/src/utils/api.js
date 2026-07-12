@@ -14,19 +14,25 @@ export async function queryIncident(error, language = "en") {
   return res.json();
 }
 
-/**
- * Ingestion stub until Person 2 adds POST /ingest.
- * Simulates pipeline delay and returns a local record for the demo UI.
- */
 export async function ingestIncident(rawText) {
-  await new Promise((resolve) => setTimeout(resolve, 1500));
+  const res = await fetch(`${API_URL}/ingest`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ raw: rawText }),
+  });
 
+  if (!res.ok) {
+    throw new Error(`Ingest failed: ${res.status}`);
+  }
+
+  const data = await res.json();
   return {
-    id: `local-${Date.now()}`,
+    id: data.id,
     raw_text: rawText,
     ingested_at: new Date().toISOString(),
-    status: "stub",
-    message:
-      "Incident recorded locally for demo. When the backend ingest endpoint is live, this will write to Neo4j.",
+    status: data.status,
+    message: data.message,
+    title: data.title,
+    storage: data.storage,
   };
 }

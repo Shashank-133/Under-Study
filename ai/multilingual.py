@@ -39,10 +39,12 @@ never crash.
 
 import os
 import re
+from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
 
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 load_dotenv()
 
 SARVAM_TRANSLATE_URL = "https://api.sarvam.ai/translate"

@@ -8,142 +8,96 @@
 
 ---
 
-## 2. What's done so far
+## 2. What's done
 
 ### Root
-- [x] `README.md` — pitch, ownership rules, run instructions
-- [x] `.env.example` — Neo4j, Sarvam, Render, Vite API URL placeholders
-- [x] `.gitignore` — Python + Node + `.env`
+- [x] `README.md`, `.env.example`, `.gitignore`
+- [x] Docs: `PROGRESS.md`, `ROLE_GUIDE.md`
 
 ### Frontend (Person 1)
-- [x] `frontend/package.json` — React 18 + Vite
-- [x] `frontend/vite.config.js` — dev proxy to backend
-- [x] `frontend/index.html`, `frontend/src/main.jsx`
-- [x] `frontend/src/App.jsx` — chat UI wired to `POST /query`
-- [x] `frontend/src/App.css` — minimal dark theme
-- [x] `frontend/src/components/`, `frontend/src/pages/` — empty, ready to build
+- [x] Chat UI with language toggle (`en|hi|ta|te`)
+- [x] Response card: answer, confidence, ask_person, similar incidents, PR links
+- [x] Ingestion demo page → `POST /ingest`, then "Try in Chat"
+- [x] Vite proxy for `/query`, `/ingest`, `/health`
+- [x] Components under `frontend/src/components/` (reusable building blocks)
 
 ### Backend (Person 2)
-- [x] `backend/requirements.txt`
-- [x] `backend/app/main.py` — FastAPI + stub `/query` + `/health`
-- [x] `backend/app/api/query.py` — frozen request/response models
-- [x] `backend/app/models/incident.py` — Pydantic models matching graph schema
-- [x] `backend/app/graph/connection.py` — Neo4j driver stub
-- [x] `backend/seed_data/incidents.json` — 4 example incidents
+- [x] Real Neo4j AuraDB driver (`app/graph/connection.py`)
+- [x] Seed script + **18** incidents (`python -m app.graph.seed`)
+- [x] Similarity search + confidence scoring (`queries.py`, `similarity.py`)
+- [x] Real `POST /query` (seed JSON fallback when Neo4j unset)
+- [x] Real `POST /ingest` (runtime store + Neo4j when configured)
+- [x] AI bridge (`app/ai_bridge.py`) → Person 3 modules when importable
 
 ### AI (Person 3)
-- [x] `ai/extraction.py` — `extract_incident()` stub + Sarvam TODO
-- [x] `ai/answer_generation.py` — `generate_answer()` stub
-- [x] `ai/multilingual.py` — `translate_answer()` stub (hi/ta/te)
-- [x] `ai/embeddings.py` — `compute_similarity()` stub
+- [x] `extraction.py` — Sarvam chat extraction + stub fallback
+- [x] `embeddings.py` — sentence-transformers + token-overlap fallback
+- [x] `answer_generation.py` — Sarvam conversational answers + template fallback
+- [x] `multilingual.py` — hi/ta/te with code-span preservation
+- [x] See `ai/PERSON3_WORK_LOG.md`
 
-### Shared
-- [x] `ingestion/ingest_job.py` — Render-ready stub
-- [x] `docs/PROGRESS.md` — this file
-- [x] `docs/ROLE_GUIDE.md` — per-person phased IDE context
+### Shared ingestion
+- [x] `ingestion/ingest_job.py` — seed or raw → extract/write via backend services
 
 ---
 
-## 3. Current architecture
+## 3. Architecture (current)
 
 ```
 Junior dev pastes error
         │
         ▼
-  frontend/ (React chat UI)
-        │  POST /query { error, language }
+  frontend/  POST /query { error, language }
+        │
         ▼
-  backend/ (FastAPI)
-        │  [stub today] → [Neo4j graph + AI pipeline later]
+  backend/  similarity (Neo4j | seed + runtime) → ai.generate_answer
+        │
         ▼
-  Response { answer, confidence, similar_incidents, ask_person }
+  { answer, confidence, similar_incidents, ask_person }
+
+Ingestion demo / Render job
+        │
+        ▼
+  POST /ingest or ingest_job.py
+        │
+        ▼
+  ai.extract_incident → Neo4j (optional) + runtime store
 ```
 
-**Graph data model (nodes):** `Incident`, `ErrorSignature`, `RootCause`, `File`, `FixPattern`, `Person`, `PR`
+---
 
-**Relationships:** `HAS_SIGNATURE`, `CAUSED_BY`, `LOCATED_IN`, `RESOLVED_BY`, `IMPLEMENTED_IN`, `AUTHORED_BY`, `REVIEWED`, `SIMILAR_TO {score}`
+## 4. Env vars
 
-**AI modules (called by backend/ingestion later):** extraction → embeddings for similarity → answer_generation → multilingual
+| Var | Required for | Where to get |
+|-----|--------------|--------------|
+| `NEO4J_URI` / `USER` / `PASSWORD` | AuraDB graph | https://console.neo4j.io |
+| `SARVAM_API_KEY` | Real extraction / answers / translate | https://dashboard.sarvam.ai/key-management |
+| `RENDER_API_KEY` | Render workflows later | https://dashboard.render.com/u/settings#api-keys |
+| `VITE_API_URL` | Frontend → API | Local default `http://localhost:8000` |
+
+Placeholder values are treated as unset so local demos keep working.
 
 ---
 
-## 4. What each person needs to do next
-
-### Person 1 — Frontend
-- Build out full chat UI in `frontend/src/components/` and `frontend/src/pages/`
-- Keep wired to `/query`; add language-toggle display behavior
-- Build live ingestion demo view
-- Do not modify `backend/` or `ai/`
-
-### Person 2 — Backend
-- Real Neo4j AuraDB connection in `backend/app/graph/`
-- Expand seed data to 15–20 incidents; write seed script
-- Similarity search + graph traversal + confidence scoring
-- Replace stub `/query` logic (same request/response shape)
-- Do not modify `frontend/` or `ai/`
-
-### Person 3 — AI
-- Real `extract_incident()` via Sarvam
-- `answer_generation.py` — conversational answers from graph results
-- `multilingual.py` — Hindi/Tamil/Telugu with code terms preserved
-- `embeddings.py` — error signature similarity
-- Do not modify `frontend/` or `backend/`
-
-See **`docs/ROLE_GUIDE.md`** for detailed phased breakdown per role.
-
----
-
-## 5. Phase 2 — Future Enhancements
+## 5. Phase 2 — Future enhancements
 
 | Idea | Owner |
 |------|-------|
-| WebSocket live updates for ingestion demo | Person 1 / frontend |
-| Graph visualization of similar incidents | Person 1 / frontend |
-| Confidence score breakdown UI (stack vs file vs category) | Person 1 / frontend |
-| Slack/GitHub webhook auto-ingestion | Person 3 / ingestion |
-| Cypher query caching layer | Person 2 / backend |
-| Telugu voice input via Sarvam | Person 3 / ai |
-| Team admin dashboard for incident review | Person 1 / frontend |
+| WebSocket live updates for ingestion | Frontend |
+| Graph visualization | Frontend |
+| Confidence breakdown UI | Frontend |
+| Slack/GitHub webhook auto-ingestion | Ingestion |
+| Cypher query caching | Backend |
+| Telugu voice input via Sarvam | AI |
 
 ---
 
-## 6. Known interface contracts (do not change without team sync)
+## 6. Frozen API contract
 
-### `POST /query`
+Unchanged request/response field names for `POST /query` — see ROLE_GUIDE.
 
-**Request:**
-```json
-{
-  "error": "string (required)",
-  "language": "en | hi | ta | te (optional, default en)"
-}
-```
-
-**Response:**
-```json
-{
-  "answer": "string",
-  "confidence": 0.0,
-  "similar_incidents": [
-    {
-      "id": "string",
-      "title": "string",
-      "similarity_score": 0.0,
-      "fix_summary": "string",
-      "resolved_by": "string",
-      "pr_url": "string"
-    }
-  ],
-  "ask_person": "string | null"
-}
-```
-
-### `.env` variable names
-`NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`, `SARVAM_API_KEY`, `RENDER_API_KEY`, `VITE_API_URL`
-
-### Incident JSON field names
-`id`, `title`, `description`, `created_at`, `error_signature` (`message`, `stack_trace`, `error_type`), `root_cause` (`category`, `description`), `files` (`path`, `line`), `fix_pattern` (`description`, `code_snippet`), `resolved_by` (`name`, `email`), `pr` (`number`, `url`, `title`), `similar_to` (`incident_id`, `score`)
+`POST /ingest`: `{ "raw": string }` → `{ status, id, title, neo4j_written, storage, message }`
 
 ---
 
-*Last updated: initial skeleton setup pass.*
+*Last updated: full-stack integration pass.*

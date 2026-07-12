@@ -7,6 +7,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/query": "http://localhost:8000",
+      "/ingest": "http://localhost:8000",
       "/health": "http://localhost:8000",
     },
   },

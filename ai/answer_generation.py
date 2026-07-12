@@ -46,10 +46,12 @@ Design choices:
 """
 
 import os
+from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
 
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 load_dotenv()
 
 SARVAM_CHAT_URL = "https://api.sarvam.ai/v1/chat/completions"

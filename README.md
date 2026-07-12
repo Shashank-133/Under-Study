@@ -6,35 +6,15 @@
 
 ---
 
-## Folder ownership (branch safety)
+## Quick start (full stack)
 
-| Folder | Owner | Rule |
-|--------|-------|------|
-| `frontend/` | Person 1 | Do not modify `backend/` or `ai/` |
-| `backend/` | Person 2 | Do not modify `frontend/` or `ai/` |
-| `ai/` | Person 3 | Do not modify `frontend/` or `backend/` |
-| `ingestion/` | Shared | Sync with team before editing |
-| Root config (`.env.example`, API contract) | Shared | Sync with team before editing |
-
-Each person works on their own git branch. See [`docs/ROLE_GUIDE.md`](docs/ROLE_GUIDE.md) for phased role instructions to paste into your IDE.
-
----
-
-## How to run each part locally
-
-### Person 1 — Frontend (`frontend/`)
+1. Copy env and fill real values when ready (placeholders are ignored safely):
 
 ```bash
-cd frontend
-npm install
-npm run dev
+cp .env.example .env
 ```
 
-Opens at `http://localhost:5173`. Proxies API calls to the backend on port 8000.
-
-Copy `.env.example` to `.env` at the repo root (or set `VITE_API_URL` in `frontend/.env`).
-
-### Person 2 — Backend (`backend/`)
+2. Backend:
 
 ```bash
 cd backend
@@ -45,33 +25,70 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt
+# Optional AI extras (embeddings model):
+pip install -r ../ai/requirements.txt
+
 uvicorn app.main:app --reload --port 8000
 ```
 
-API docs at `http://localhost:8000/docs`. Test the stub:
+3. Frontend (new terminal):
 
 ```bash
-curl -X POST http://localhost:8000/query -H "Content-Type: application/json" -d "{\"error\":\"TypeError: test\"}"
+cd frontend
+npm install
+npm run dev
 ```
 
-### Person 3 — AI (`ai/`)
+Open [http://localhost:5173](http://localhost:5173).
+
+4. Optional — seed Neo4j after setting Aura credentials:
 
 ```bash
-cd ai
-# From repo root, with backend venv or a shared venv:
-python extraction.py
+cd backend
+python -m app.graph.seed
 ```
 
-Modules are plain Python files. Set `SARVAM_API_KEY` in `.env` when implementing the real Sarvam call.
+Without Neo4j/Sarvam keys the app still runs using seed JSON + template answers.
 
-### Ingestion (`ingestion/`) — team sync required
+---
+
+## Folder ownership (branch safety)
+
+| Folder | Owner | Rule |
+|--------|-------|------|
+| `frontend/` | Person 1 | Do not modify `backend/` or `ai/` |
+| `backend/` | Person 2 | Do not modify `frontend/` or `ai/` |
+| `ai/` | Person 3 | Do not modify `frontend/` or `backend/` |
+| `ingestion/` | Shared | Sync with team before editing |
+| Root config (`.env.example`, API contract) | Shared | Sync with team before editing |
+
+See [`docs/ROLE_GUIDE.md`](docs/ROLE_GUIDE.md) for phased role instructions.
+
+---
+
+## API
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/health` | Status + incident source |
+| `POST` | `/query` | Similarity search → answer |
+| `POST` | `/ingest` | Extract + store a new incident |
+
+**`POST /query`** — `{ "error": string, "language": "en"|"hi"|"ta"|"te" }`  
+Response: `{ "answer", "confidence", "similar_incidents", "ask_person" }`
+
+**`POST /ingest`** — `{ "raw": string }`  
+Response: `{ "status", "id", "title", "neo4j_written", "storage", "message" }`
+
+---
+
+## Ingestion CLI
 
 ```bash
 cd ingestion
-python ingest_job.py
+python ingest_job.py seed
+python ingest_job.py raw "TypeError: Cannot read property 'map' of undefined"
 ```
-
-Stub only — coordinate with Person 2 and Person 3 before wiring to Neo4j and Sarvam.
 
 ---
 
@@ -81,21 +98,11 @@ Stub only — coordinate with Person 2 and Person 3 before wiring to Neo4j and S
 understudy/
 ├── README.md
 ├── .env.example
-├── .gitignore
-├── frontend/          # Person 1
-├── backend/           # Person 2
-├── ai/                # Person 3
-├── ingestion/         # Shared
+├── frontend/          # React chat + ingestion demo
+├── backend/           # FastAPI + Neo4j + /query + /ingest
+├── ai/                # Sarvam extraction / answers / multilingual / embeddings
+├── ingestion/         # Render-ready ingest job
 └── docs/
-    ├── PROGRESS.md
-    └── ROLE_GUIDE.md
 ```
 
----
-
-## Interface contract (do not change without team sync)
-
-**`POST /query`** — request: `{ "error": string, "language": "en"|"hi"|"ta"|"te" }`  
-Response: `{ "answer", "confidence", "similar_incidents", "ask_person" }`
-
-Full details in [`docs/PROGRESS.md`](docs/PROGRESS.md).
+Full status: [`docs/PROGRESS.md`](docs/PROGRESS.md).

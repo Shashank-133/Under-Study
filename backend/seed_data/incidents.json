@@ -29,7 +29,10 @@
       "url": "https://github.com/team/understudy/pull/142",
       "title": "fix: null-safe user list in Dashboard"
     },
-    "similar_to": []
+    "similar_to": [
+      { "incident_id": "inc-003", "score": 0.68 },
+      { "incident_id": "inc-012", "score": 0.61 }
+    ]
   },
   {
     "id": "inc-002",
@@ -63,7 +66,7 @@
       "title": "fix: add staging origin to CORS"
     },
     "similar_to": [
-      { "incident_id": "inc-001", "score": 0.12 }
+      { "incident_id": "inc-015", "score": 0.55 }
     ]
   },
   {
@@ -98,7 +101,8 @@
       "title": "fix: handle profile fetch errors"
     },
     "similar_to": [
-      { "incident_id": "inc-001", "score": 0.68 }
+      { "incident_id": "inc-001", "score": 0.68 },
+      { "incident_id": "inc-012", "score": 0.52 }
     ]
   },
   {
@@ -132,6 +136,485 @@
       "url": "https://github.com/team/understudy/pull/171",
       "title": "docs: clarify .env setup for Neo4j Aura"
     },
+    "similar_to": [
+      { "incident_id": "inc-009", "score": 0.48 }
+    ]
+  },
+  {
+    "id": "inc-005",
+    "title": "JWT expired mid-session redirects loop",
+    "description": "Users stuck refreshing login when access token expires during a long session.",
+    "created_at": "2026-03-28T11:20:00Z",
+    "error_signature": {
+      "message": "AxiosError: Request failed with status code 401 — TokenExpiredError: jwt expired",
+      "stack_trace": "at refreshAccessToken (authInterceptor.js:33)\n  at Axios.request (axios.js:45)",
+      "error_type": "AuthError"
+    },
+    "root_cause": {
+      "category": "auth_token",
+      "description": "Refresh token flow called itself when refresh also returned 401."
+    },
+    "files": [
+      { "path": "frontend/src/services/authInterceptor.js", "line": 33 },
+      { "path": "backend/app/auth/tokens.py", "line": 58 }
+    ],
+    "fix_pattern": {
+      "description": "Force logout and clear tokens when refresh fails; avoid recursive interceptors",
+      "code_snippet": "if (error.response?.status === 401 && !original._retry) { clearSession(); redirect('/login'); }"
+    },
+    "resolved_by": {
+      "name": "Ravi Menon",
+      "email": "ravi@team.dev"
+    },
+    "pr": {
+      "number": 180,
+      "url": "https://github.com/team/understudy/pull/180",
+      "title": "fix: break 401 refresh redirect loop"
+    },
+    "similar_to": [
+      { "incident_id": "inc-014", "score": 0.44 }
+    ]
+  },
+  {
+    "id": "inc-006",
+    "title": "Race condition double-submits payment",
+    "description": "Fast double-click on Pay charged the card twice before the button disabled.",
+    "created_at": "2026-04-02T08:40:00Z",
+    "error_signature": {
+      "message": "IntegrityError: duplicate key value violates unique constraint \"payments_idempotency_key_key\"",
+      "stack_trace": "at create_payment (payments/service.py:91)\n  at POST /api/payments (payments/routes.py:40)",
+      "error_type": "IntegrityError"
+    },
+    "root_cause": {
+      "category": "race_condition",
+      "description": "No client debounce and missing server-side idempotency on first deploy."
+    },
+    "files": [
+      { "path": "frontend/src/components/PayButton.jsx", "line": 17 },
+      { "path": "backend/payments/service.py", "line": 91 }
+    ],
+    "fix_pattern": {
+      "description": "Disable button on click and require Idempotency-Key header on payment create",
+      "code_snippet": "setSubmitting(true); await api.post('/payments', body, { headers: { 'Idempotency-Key': key } });"
+    },
+    "resolved_by": {
+      "name": "Priya Sharma",
+      "email": "priya@team.dev"
+    },
+    "pr": {
+      "number": 188,
+      "url": "https://github.com/team/understudy/pull/188",
+      "title": "fix: payment idempotency + button lock"
+    },
     "similar_to": []
+  },
+  {
+    "id": "inc-007",
+    "title": "Memory leak from unclosed Neo4j sessions",
+    "description": "API worker OOMs after heavy query traffic; sessions never closed in finally blocks.",
+    "created_at": "2026-04-05T19:10:00Z",
+    "error_signature": {
+      "message": "MemoryError: Unable to allocate array — neo4j.exceptions.ClientError: session leaked",
+      "stack_trace": "at search_similar (app/graph/queries.py:64)\n  at query (app/main.py:48)",
+      "error_type": "MemoryError"
+    },
+    "root_cause": {
+      "category": "resource_leak",
+      "description": "Driver sessions created per request without context managers."
+    },
+    "files": [
+      { "path": "backend/app/graph/queries.py", "line": 64 },
+      { "path": "backend/app/graph/connection.py", "line": 40 }
+    ],
+    "fix_pattern": {
+      "description": "Always open sessions with `with driver.session() as session:` and close driver on shutdown",
+      "code_snippet": "with get_driver().session() as session:\n    return session.run(cypher, **params).data()"
+    },
+    "resolved_by": {
+      "name": "Alice Kumar",
+      "email": "alice@team.dev"
+    },
+    "pr": {
+      "number": 195,
+      "url": "https://github.com/team/understudy/pull/195",
+      "title": "fix: close Neo4j sessions reliably"
+    },
+    "similar_to": [
+      { "incident_id": "inc-004", "score": 0.35 }
+    ]
+  },
+  {
+    "id": "inc-008",
+    "title": "Timezone off-by-one on deadline badges",
+    "description": "Deadlines show as overdue one day early for IST users because UTC dates were compared as local dates.",
+    "created_at": "2026-04-08T07:25:00Z",
+    "error_signature": {
+      "message": "AssertionError: expected badge 'due tomorrow' but got 'overdue' for 2026-04-09T00:00:00Z in Asia/Kolkata",
+      "stack_trace": "at formatDeadline (dateUtils.js:22)\n  at DeadlineBadge.jsx:11",
+      "error_type": "AssertionError"
+    },
+    "root_cause": {
+      "category": "timezone",
+      "description": "Used toDateString() which converts to local midnight incorrectly for UTC midnights."
+    },
+    "files": [
+      { "path": "frontend/src/utils/dateUtils.js", "line": 22 },
+      { "path": "frontend/src/components/DeadlineBadge.jsx", "line": 11 }
+    ],
+    "fix_pattern": {
+      "description": "Compare calendar dates in a fixed timezone with date-fns-tz",
+      "code_snippet": "const localDay = formatInTimeZone(deadline, tz, 'yyyy-MM-dd');"
+    },
+    "resolved_by": {
+      "name": "Sneha Iyer",
+      "email": "sneha@team.dev"
+    },
+    "pr": {
+      "number": 201,
+      "url": "https://github.com/team/understudy/pull/201",
+      "title": "fix: timezone-safe deadline comparison"
+    },
+    "similar_to": []
+  },
+  {
+    "id": "inc-009",
+    "title": "Redis URL typo crashes Celery worker",
+    "description": "Background jobs never start in staging because REDIS_URL had a missing slash.",
+    "created_at": "2026-04-10T13:55:00Z",
+    "error_signature": {
+      "message": "kombu.exceptions.OperationalError: Error 111 connecting to redis://localhost:6379/0 — Connection refused",
+      "stack_trace": "at celery_app (workers/celery_app.py:14)\n  at worker_main (celery/bin/worker.py:88)",
+      "error_type": "ConnectionError"
+    },
+    "root_cause": {
+      "category": "configuration",
+      "description": "Staging secret pointed at localhost instead of managed Redis."
+    },
+    "files": [
+      { "path": "workers/celery_app.py", "line": 14 },
+      { "path": "deploy/staging.env", "line": 8 }
+    ],
+    "fix_pattern": {
+      "description": "Point REDIS_URL at the managed instance and fail fast if host is localhost in staging",
+      "code_snippet": "REDIS_URL=redis://staging-redis.example.com:6379/0"
+    },
+    "resolved_by": {
+      "name": "Ravi Menon",
+      "email": "ravi@team.dev"
+    },
+    "pr": {
+      "number": 209,
+      "url": "https://github.com/team/understudy/pull/209",
+      "title": "fix: staging Redis URL for Celery"
+    },
+    "similar_to": [
+      { "incident_id": "inc-004", "score": 0.48 }
+    ]
+  },
+  {
+    "id": "inc-010",
+    "title": "Infinite re-render from unstable useEffect deps",
+    "description": "Settings page freezes browser tab after opening because effect depends on a new object each render.",
+    "created_at": "2026-04-12T16:30:00Z",
+    "error_signature": {
+      "message": "Warning: Maximum update depth exceeded. This can happen when a component calls setState inside useEffect.",
+      "stack_trace": "at SettingsPage.jsx:58\n  at commitHookEffectListMount (react-dom.development.js:23150)",
+      "error_type": "ReactError"
+    },
+    "root_cause": {
+      "category": "react_hooks",
+      "description": "useEffect dependency included inline object `{ theme }` recreated every render."
+    },
+    "files": [
+      { "path": "frontend/src/pages/SettingsPage.jsx", "line": 58 }
+    ],
+    "fix_pattern": {
+      "description": "Depend on primitive fields or memoize the options object",
+      "code_snippet": "useEffect(() => { loadPrefs(theme); }, [theme]);"
+    },
+    "resolved_by": {
+      "name": "Priya Sharma",
+      "email": "priya@team.dev"
+    },
+    "pr": {
+      "number": 214,
+      "url": "https://github.com/team/understudy/pull/214",
+      "title": "fix: stabilize SettingsPage effect deps"
+    },
+    "similar_to": [
+      { "incident_id": "inc-016", "score": 0.42 }
+    ]
+  },
+  {
+    "id": "inc-011",
+    "title": "SQL injection in search filter",
+    "description": "Security review found string-interpolated WHERE clause in incident search.",
+    "created_at": "2026-04-15T10:05:00Z",
+    "error_signature": {
+      "message": "SecurityAlert: Possible SQL injection via query param 'q' — psycopg2.ProgrammingError near \"OR 1=1\"",
+      "stack_trace": "at search_incidents (backend/search/repo.py:27)\n  at GET /api/search (backend/search/routes.py:12)",
+      "error_type": "SecurityError"
+    },
+    "root_cause": {
+      "category": "injection",
+      "description": "User input concatenated into raw SQL instead of parameterized query."
+    },
+    "files": [
+      { "path": "backend/search/repo.py", "line": 27 }
+    ],
+    "fix_pattern": {
+      "description": "Use parameterized queries / ORM filters for all user-supplied values",
+      "code_snippet": "session.execute(text(\"SELECT * FROM incidents WHERE title ILIKE :q\"), {\"q\": f\"%{q}%\"})"
+    },
+    "resolved_by": {
+      "name": "Alice Kumar",
+      "email": "alice@team.dev"
+    },
+    "pr": {
+      "number": 220,
+      "url": "https://github.com/team/understudy/pull/220",
+      "title": "security: parameterize search SQL"
+    },
+    "similar_to": []
+  },
+  {
+    "id": "inc-012",
+    "title": "Cannot read length of undefined on empty cart",
+    "description": "Checkout summary crashes when cart is undefined after logout.",
+    "created_at": "2026-04-18T12:45:00Z",
+    "error_signature": {
+      "message": "TypeError: Cannot read properties of undefined (reading 'length')",
+      "stack_trace": "at CartSummary.jsx:19\n  at CheckoutPage.jsx:33",
+      "error_type": "TypeError"
+    },
+    "root_cause": {
+      "category": "null_reference",
+      "description": "Cart store cleared to undefined instead of empty array on logout."
+    },
+    "files": [
+      { "path": "frontend/src/components/CartSummary.jsx", "line": 19 },
+      { "path": "frontend/src/store/cartStore.js", "line": 44 }
+    ],
+    "fix_pattern": {
+      "description": "Default cart to [] and guard length access",
+      "code_snippet": "const items = cart?.items ?? [];\nreturn <span>{items.length} items</span>;"
+    },
+    "resolved_by": {
+      "name": "Sneha Iyer",
+      "email": "sneha@team.dev"
+    },
+    "pr": {
+      "number": 226,
+      "url": "https://github.com/team/understudy/pull/226",
+      "title": "fix: null-safe cart summary"
+    },
+    "similar_to": [
+      { "incident_id": "inc-001", "score": 0.61 },
+      { "incident_id": "inc-003", "score": 0.52 }
+    ]
+  },
+  {
+    "id": "inc-013",
+    "title": "WebSocket reconnect storm after deploy",
+    "description": "All clients hammered the socket server when reconnect backoff was zero.",
+    "created_at": "2026-04-20T21:15:00Z",
+    "error_signature": {
+      "message": "Error: WebSocket is closed before the connection is established",
+      "stack_trace": "at connect (realtime/client.js:47)\n  at onclose (realtime/client.js:62)",
+      "error_type": "WebSocketError"
+    },
+    "root_cause": {
+      "category": "networking",
+      "description": "Reconnect fired immediately with no exponential backoff or jitter."
+    },
+    "files": [
+      { "path": "frontend/src/realtime/client.js", "line": 47 }
+    ],
+    "fix_pattern": {
+      "description": "Add exponential backoff with jitter and max attempts",
+      "code_snippet": "const delay = Math.min(30000, 1000 * 2 ** attempt) + Math.random() * 500;"
+    },
+    "resolved_by": {
+      "name": "Ravi Menon",
+      "email": "ravi@team.dev"
+    },
+    "pr": {
+      "number": 233,
+      "url": "https://github.com/team/understudy/pull/233",
+      "title": "fix: websocket reconnect backoff"
+    },
+    "similar_to": []
+  },
+  {
+    "id": "inc-014",
+    "title": "CSRF token mismatch on form POST",
+    "description": "Settings save fails after cookie domain change; CSRF cookie not sent cross-subdomain.",
+    "created_at": "2026-04-22T09:50:00Z",
+    "error_signature": {
+      "message": "Forbidden: CSRF token missing or incorrect — HTTP 403",
+      "stack_trace": "at saveSettings (settingsApi.js:28)\n  at SettingsForm.jsx:71",
+      "error_type": "AuthError"
+    },
+    "root_cause": {
+      "category": "auth_token",
+      "description": "CSRF cookie SameSite/domain not updated after moving app to app.example.com."
+    },
+    "files": [
+      { "path": "backend/app/middleware/csrf.py", "line": 19 },
+      { "path": "frontend/src/api/settingsApi.js", "line": 28 }
+    ],
+    "fix_pattern": {
+      "description": "Set CSRF cookie Domain=.example.com and include credentials on fetch",
+      "code_snippet": "fetch(url, { method: 'POST', credentials: 'include', headers: { 'X-CSRFToken': token } })"
+    },
+    "resolved_by": {
+      "name": "Priya Sharma",
+      "email": "priya@team.dev"
+    },
+    "pr": {
+      "number": 240,
+      "url": "https://github.com/team/understudy/pull/240",
+      "title": "fix: CSRF cookie domain for subdomains"
+    },
+    "similar_to": [
+      { "incident_id": "inc-005", "score": 0.44 }
+    ]
+  },
+  {
+    "id": "inc-015",
+    "title": "Preflight OPTIONS fails for custom header",
+    "description": "Uploads fail because X-Request-Id is not allowed in Access-Control-Allow-Headers.",
+    "created_at": "2026-04-25T15:20:00Z",
+    "error_signature": {
+      "message": "Access to XMLHttpRequest at 'https://api.example.com/upload' has been blocked by CORS policy: Request header field x-request-id is not allowed",
+      "stack_trace": "at uploadFile (uploadService.js:12)",
+      "error_type": "CORS"
+    },
+    "root_cause": {
+      "category": "cors_misconfiguration",
+      "description": "Custom tracing header added on FE without updating CORS allow_headers."
+    },
+    "files": [
+      { "path": "backend/app/main.py", "line": 18 },
+      { "path": "frontend/src/services/uploadService.js", "line": 12 }
+    ],
+    "fix_pattern": {
+      "description": "Allow X-Request-Id in CORS middleware headers list",
+      "code_snippet": "allow_headers=[\"*\", \"X-Request-Id\"]"
+    },
+    "resolved_by": {
+      "name": "Ravi Menon",
+      "email": "ravi@team.dev"
+    },
+    "pr": {
+      "number": 247,
+      "url": "https://github.com/team/understudy/pull/247",
+      "title": "fix: allow X-Request-Id CORS header"
+    },
+    "similar_to": [
+      { "incident_id": "inc-002", "score": 0.55 }
+    ]
+  },
+  {
+    "id": "inc-016",
+    "title": "Stale closure loses latest search query",
+    "description": "Debounced search always fires with the first typed character because handler closed over old state.",
+    "created_at": "2026-04-28T11:05:00Z",
+    "error_signature": {
+      "message": "AssertionError: expected search call with 'neo4j' but received 'n'",
+      "stack_trace": "at useDebouncedSearch (hooks/useDebouncedSearch.js:21)\n  at SearchBar.jsx:14",
+      "error_type": "ReactError"
+    },
+    "root_cause": {
+      "category": "react_hooks",
+      "description": "setTimeout callback captured initial query; missing ref or functional update."
+    },
+    "files": [
+      { "path": "frontend/src/hooks/useDebouncedSearch.js", "line": 21 },
+      { "path": "frontend/src/components/SearchBar.jsx", "line": 14 }
+    ],
+    "fix_pattern": {
+      "description": "Keep latest query in a ref updated every render before scheduling debounce",
+      "code_snippet": "queryRef.current = query;\ntimeoutId = setTimeout(() => search(queryRef.current), 300);"
+    },
+    "resolved_by": {
+      "name": "Sneha Iyer",
+      "email": "sneha@team.dev"
+    },
+    "pr": {
+      "number": 252,
+      "url": "https://github.com/team/understudy/pull/252",
+      "title": "fix: avoid stale debounce closure"
+    },
+    "similar_to": [
+      { "incident_id": "inc-010", "score": 0.42 }
+    ]
+  },
+  {
+    "id": "inc-017",
+    "title": "Pydantic v2 Field default breaks OpenAPI",
+    "description": "/docs crashes after upgrade because mutable default list used incorrectly on response model.",
+    "created_at": "2026-05-01T08:35:00Z",
+    "error_signature": {
+      "message": "pydantic.errors.PydanticUserError: `Field` default cannot be used with `default_factory` — TypeError on QueryResponse",
+      "stack_trace": "at QueryResponse (app/api/query.py:20)\n  at get_openapi (fastapi/openapi/utils.py:210)",
+      "error_type": "ValidationError"
+    },
+    "root_cause": {
+      "category": "dependency_upgrade",
+      "description": "Pydantic v2 rejects `Field(default=[])`; need default_factory=list."
+    },
+    "files": [
+      { "path": "backend/app/api/query.py", "line": 20 }
+    ],
+    "fix_pattern": {
+      "description": "Use Field(default_factory=list) for mutable defaults",
+      "code_snippet": "similar_incidents: list[SimilarIncidentResult] = Field(default_factory=list)"
+    },
+    "resolved_by": {
+      "name": "Alice Kumar",
+      "email": "alice@team.dev"
+    },
+    "pr": {
+      "number": 260,
+      "url": "https://github.com/team/understudy/pull/260",
+      "title": "fix: pydantic v2 list Field defaults"
+    },
+    "similar_to": []
+  },
+  {
+    "id": "inc-018",
+    "title": "N+1 queries make incidents list slow",
+    "description": "Incidents index API times out above ~200 rows because each row triggers separate person/PR lookups.",
+    "created_at": "2026-05-04T17:40:00Z",
+    "error_signature": {
+      "message": "TimeoutError: Query exceeded 30s — sqlalchemy.exc.TimeoutError on SELECT from persons",
+      "stack_trace": "at list_incidents (backend/incidents/service.py:55)\n  at GET /api/incidents (backend/incidents/routes.py:18)",
+      "error_type": "TimeoutError"
+    },
+    "root_cause": {
+      "category": "performance",
+      "description": "ORM lazy-loaded relationships inside a loop without joinedload."
+    },
+    "files": [
+      { "path": "backend/incidents/service.py", "line": 55 },
+      { "path": "backend/incidents/models.py", "line": 30 }
+    ],
+    "fix_pattern": {
+      "description": "Eager-load related Person and PR with joinedload / selectinload",
+      "code_snippet": "session.scalars(select(Incident).options(joinedload(Incident.resolved_by), joinedload(Incident.pr))).all()"
+    },
+    "resolved_by": {
+      "name": "Priya Sharma",
+      "email": "priya@team.dev"
+    },
+    "pr": {
+      "number": 268,
+      "url": "https://github.com/team/understudy/pull/268",
+      "title": "perf: eager-load incident relations"
+    },
+    "similar_to": [
+      { "incident_id": "inc-007", "score": 0.28 }
+    ]
   }
 ]

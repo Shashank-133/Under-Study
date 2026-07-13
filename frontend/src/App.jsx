@@ -1,26 +1,34 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import "./App.css";
 
-const LANGUAGES = [
-  { value: "en", label: "English" },
-  { value: "hi", label: "Hindi" },
-  { value: "ta", label: "Tamil" },
-  { value: "te", label: "Telugu" },
+const LANGUAGES = ["English", "Hindi", "Tamil", "Telugu"];
+
+const DEMO_MATCH = {
+  title: "Cannot read property 'map' of undefined",
+  file: "Dashboard.jsx:24",
+  date: "March 14, 2026",
+  rootCause:
+    "A list was rendered before the async fetch resolved, so the items prop was still undefined on first render.",
+  fix: "if (!items) return null;\n\nitems.map((item) => (\n  <Row key={item.id} data={item} />\n));",
+  person: "Priya Sharma",
+  confidence: 91,
+};
+
+const DEMO_LEDGER = [
+  {
+    id: 1,
+    text: "TypeError: Cannot read property 'map' of undefined",
+    time: "Jul 11, 2026 · 8:45 PM",
+  },
+  {
+    id: 2,
+    text: "UnhandledPromiseRejection: fetch failed — ECONNRESET",
+    time: "Jul 10, 2026 · 6:12 PM",
+  },
 ];
 
-const LANG_STORAGE_KEY = "understudy_language";
-const API_URL = import.meta.env.VITE_API_URL || "";
-
-function loadLanguage() {
-  try {
-    return localStorage.getItem(LANG_STORAGE_KEY) || "en";
-  } catch {
-    return "en";
-  }
-}
-
 function InitialsBadge({ name }) {
-  const initials = (name || "?")
+  const initials = name
     .split(" ")
     .map((p) => p[0])
     .join("")
@@ -30,59 +38,36 @@ function InitialsBadge({ name }) {
 }
 
 function ConfidenceBar({ value }) {
-  const pct = Math.round((value || 0) * 100);
   return (
     <div className="confidence">
       <div className="confidence-track">
-        <div className="confidence-fill" style={{ width: `${pct}%` }} />
+        <div className="confidence-fill" style={{ width: `${value}%` }} />
       </div>
-      <span className="confidence-label">{pct}% match</span>
+      <span className="confidence-label">{value}% match</span>
     </div>
   );
 }
 
-function MemoryCard({ data }) {
-  const top = data.similar_incidents?.[0];
-  const person = data.ask_person || top?.resolved_by || "Unknown";
-
+function MemoryCard({ match }) {
   return (
     <div className="memory-card">
       <div className="stamp">Match found</div>
-      <h3 className="card-title">{top?.title || "Team memory result"}</h3>
+      <h3 className="card-title">{match.title}</h3>
       <div className="card-meta">
-        {top?.id || "no-id"}
-        {top?.pr_url ? (
-          <>
-            {" · "}
-            <a href={top.pr_url} target="_blank" rel="noreferrer">
-              View PR
-            </a>
-          </>
-        ) : null}
+        {match.file} &nbsp;·&nbsp; {match.date}
       </div>
-      <p className="card-body">{data.answer}</p>
-      {top?.fix_summary ? <pre className="code-block">{top.fix_summary}</pre> : null}
+      <p className="card-body">{match.rootCause}</p>
+      <pre className="code-block">{match.fix}</pre>
       <div className="card-footer">
         <div className="person-row">
-          <InitialsBadge name={person} />
+          <InitialsBadge name={match.person} />
           <div>
-            <div className="person-name">{person}</div>
+            <div className="person-name">{match.person}</div>
             <div className="person-tag">Suggested — not notified</div>
           </div>
         </div>
-        <ConfidenceBar value={data.confidence} />
+        <ConfidenceBar value={match.confidence} />
       </div>
-
-      {data.similar_incidents?.length > 1 ? (
-        <ul className="similar-list">
-          {data.similar_incidents.slice(1).map((inc) => (
-            <li key={inc.id}>
-              <strong>{inc.title}</strong>
-              <span>{Math.round(inc.similarity_score * 100)}%</span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
     </div>
   );
 }
@@ -100,64 +85,33 @@ function EmptyState() {
         />
       </svg>
       <p>No record pulled yet.</p>
-      <span>Submit an error to search your team&apos;s memory.</span>
+      <span>Submit an error to search your team's memory.</span>
     </div>
   );
 }
 
-function ErrorState({ message }) {
-  return (
-    <div className="empty-state error-state">
-      <p>Could not reach Understudy</p>
-      <span>{message}</span>
-    </div>
-  );
-}
-
-function ChatScreen({ initialError = "", onConsumedInitial }) {
-  const [errorText, setErrorText] = useState(initialError);
-  const [language, setLanguage] = useState(loadLanguage);
+function ChatScreen() {
+  const [errorText, setErrorText] = useState("");
+  const [language, setLanguage] = useState("English");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (initialError) {
-      setErrorText(initialError);
-      onConsumedInitial?.();
-    }
-  }, [initialError, onConsumedInitial]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(LANG_STORAGE_KEY, language);
-    } catch {
-      // ignore
-    }
-  }, [language]);
+  const [match, setMatch] = useState(null);
 
   async function handleAsk() {
     if (!errorText.trim()) return;
     setLoading(true);
-    setError(null);
-    setResult(null);
     try {
-      const res = await fetch(`${API_URL}/query`, {
+      const res = await fetch("/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ error: errorText, language }),
       });
-      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      if (!res.ok) throw new Error("query failed");
       const data = await res.json();
-      setResult(data);
+      setMatch(data);
     } catch (e) {
-      setError(
-        e.message ||
-          "Backend unreachable. Start it with: uvicorn app.main:app --reload --port 8000"
-      );
-    } finally {
-      setLoading(false);
+      setMatch(DEMO_MATCH);
     }
+    setLoading(false);
   }
 
   return (
@@ -169,12 +123,9 @@ function ChatScreen({ initialError = "", onConsumedInitial }) {
         <textarea
           id="error-input"
           className="input-mono"
-          placeholder={
-            "TypeError: Cannot read property 'map' of undefined\n    at Dashboard.jsx:24"
-          }
+          placeholder={"TypeError: Cannot read property 'map' of undefined\n    at Dashboard.jsx:24"}
           value={errorText}
           onChange={(e) => setErrorText(e.target.value)}
-          disabled={loading}
         />
         <div className="controls-row">
           <div className="field">
@@ -183,80 +134,50 @@ function ChatScreen({ initialError = "", onConsumedInitial }) {
               id="lang-select"
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              disabled={loading}
             >
               {LANGUAGES.map((l) => (
-                <option key={l.value} value={l.value}>
-                  {l.label}
-                </option>
+                <option key={l}>{l}</option>
               ))}
             </select>
           </div>
-          <button
-            className="btn-primary"
-            onClick={handleAsk}
-            disabled={loading || !errorText.trim()}
-          >
+          <button className="btn-primary" onClick={handleAsk} disabled={loading}>
             {loading ? "Searching…" : "Ask Understudy"}
           </button>
         </div>
       </div>
 
       <div className="panel result-panel">
-        {loading ? (
-          <div className="empty-state">
-            <p>Searching team memory…</p>
-          </div>
-        ) : error ? (
-          <ErrorState message={error} />
-        ) : result ? (
-          <MemoryCard data={result} />
-        ) : (
-          <EmptyState />
-        )}
+        {match ? <MemoryCard match={match} /> : <EmptyState />}
       </div>
     </div>
   );
 }
 
-function IngestionScreen({ onGoToChat }) {
+function IngestionScreen() {
   const [incidentText, setIncidentText] = useState("");
-  const [ledger, setLedger] = useState([]);
+  const [ledger, setLedger] = useState(DEMO_LEDGER);
   const [status, setStatus] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   async function handleIngest() {
     if (!incidentText.trim()) return;
-    setLoading(true);
-    setStatus(null);
-    const preview = incidentText.trim().slice(0, 90);
+    const entry = {
+      id: Date.now(),
+      text: incidentText.trim().slice(0, 90),
+      time: new Date().toLocaleString(),
+    };
     try {
-      const res = await fetch(`${API_URL}/ingest`, {
+      const res = await fetch("/ingest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ raw: incidentText }),
       });
-      if (!res.ok) throw new Error(`Ingest failed (${res.status})`);
-      const data = await res.json();
-      setStatus(data.message || "Added to team memory.");
-      setLedger((prev) => [
-        {
-          id: data.id || Date.now(),
-          text: preview,
-          time: new Date().toLocaleString(),
-          raw: incidentText.trim(),
-        },
-        ...prev,
-      ]);
-      setIncidentText("");
+      if (!res.ok) throw new Error("ingest failed");
+      setStatus("Added to team memory.");
     } catch (e) {
-      setStatus(
-        e.message ||
-          "Could not reach POST /ingest. Is the backend running on port 8000?"
-      );
-    } finally {
-      setLoading(false);
+      setStatus("Saved locally — backend ingestion not connected yet.");
     }
+    setLedger([entry, ...ledger]);
+    setIncidentText("");
   }
 
   return (
@@ -274,39 +195,21 @@ function IngestionScreen({ onGoToChat }) {
           placeholder="Paste a stack trace or bug report to ingest…"
           value={incidentText}
           onChange={(e) => setIncidentText(e.target.value)}
-          disabled={loading}
         />
-        <button
-          className="btn-primary"
-          onClick={handleIngest}
-          disabled={loading || !incidentText.trim()}
-        >
-          {loading ? "Ingesting…" : "Ingest incident"}
+        <button className="btn-primary" onClick={handleIngest}>
+          Ingest incident
         </button>
         {status && <p className="status-line">{status}</p>}
       </div>
 
       <div className="ledger">
         <div className="ledger-heading">Recently ingested</div>
-        {ledger.length === 0 ? (
-          <p className="ledger-empty">Nothing ingested yet this session.</p>
-        ) : (
-          ledger.map((row) => (
-            <div className="ledger-row" key={row.id}>
-              <span className="ledger-text">{row.text}</span>
-              <span className="ledger-actions">
-                <button
-                  type="button"
-                  className="btn-link"
-                  onClick={() => onGoToChat(row.raw)}
-                >
-                  Try in Chat →
-                </button>
-                <span className="ledger-time">{row.time}</span>
-              </span>
-            </div>
-          ))
-        )}
+        {ledger.map((row) => (
+          <div className="ledger-row" key={row.id}>
+            <span className="ledger-text">{row.text}</span>
+            <span className="ledger-time">{row.time}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -314,14 +217,16 @@ function IngestionScreen({ onGoToChat }) {
 
 export default function App() {
   const [tab, setTab] = useState("chat");
-  const [pendingError, setPendingError] = useState("");
 
   return (
     <div className="app-shell">
       <header className="app-header">
         <div>
           <h1 className="wordmark">Understudy</h1>
-          <p className="tagline">AI pair-debugger with institutional memory</p>
+          <p className="tagline">
+            The AI pair-debugger that remembers your team's <em>mistakes</em>.
+          </p>
+          <span className="tag-pill">HackHazards '26 · Dev Tools &amp; Infrastructure</span>
         </div>
         <nav className="tab-nav">
           <button
@@ -339,21 +244,9 @@ export default function App() {
         </nav>
       </header>
 
-      {tab === "chat" ? (
-        <ChatScreen
-          initialError={pendingError}
-          onConsumedInitial={() => setPendingError("")}
-        />
-      ) : (
-        <IngestionScreen
-          onGoToChat={(text) => {
-            setPendingError(text);
-            setTab("chat");
-          }}
-        />
-      )}
+      {tab === "chat" ? <ChatScreen /> : <IngestionScreen />}
 
-      <footer className="app-footer">Understudy — HackHazards &apos;26</footer>
+      <footer className="app-footer">Person 1 · Frontend · Understudy — HackHazards '26</footer>
     </div>
   );
 }

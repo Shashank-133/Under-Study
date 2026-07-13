@@ -435,7 +435,7 @@ function MainApp({ onLogout }) {
 
       {tab === "chat" ? <ChatScreen /> : <IngestionScreen />}
 
-      <footer className="app-footer">Person 1 · Frontend · Understudy — HackHazards &apos;26</footer>
+      <footer className="app-footer">Understudy — HackHazards &apos;26</footer>
     </div>
   );
 }

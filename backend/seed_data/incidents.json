@@ -26,7 +26,7 @@
     },
     "pr": {
       "number": 142,
-      "url": "https://github.com/team/understudy/pull/142",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/142",
       "title": "fix: null-safe user list in Dashboard"
     },
     "similar_to": [
@@ -62,7 +62,7 @@
     },
     "pr": {
       "number": 156,
-      "url": "https://github.com/team/understudy/pull/156",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/156",
       "title": "fix: add staging origin to CORS"
     },
     "similar_to": [
@@ -97,7 +97,7 @@
     },
     "pr": {
       "number": 163,
-      "url": "https://github.com/team/understudy/pull/163",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/163",
       "title": "fix: handle profile fetch errors"
     },
     "similar_to": [
@@ -133,7 +133,7 @@
     },
     "pr": {
       "number": 171,
-      "url": "https://github.com/team/understudy/pull/171",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/171",
       "title": "docs: clarify .env setup for Neo4j Aura"
     },
     "similar_to": [
@@ -168,7 +168,7 @@
     },
     "pr": {
       "number": 180,
-      "url": "https://github.com/team/understudy/pull/180",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/180",
       "title": "fix: break 401 refresh redirect loop"
     },
     "similar_to": [
@@ -203,7 +203,7 @@
     },
     "pr": {
       "number": 188,
-      "url": "https://github.com/team/understudy/pull/188",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/188",
       "title": "fix: payment idempotency + button lock"
     },
     "similar_to": []
@@ -236,7 +236,7 @@
     },
     "pr": {
       "number": 195,
-      "url": "https://github.com/team/understudy/pull/195",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/195",
       "title": "fix: close Neo4j sessions reliably"
     },
     "similar_to": [
@@ -271,7 +271,7 @@
     },
     "pr": {
       "number": 201,
-      "url": "https://github.com/team/understudy/pull/201",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/201",
       "title": "fix: timezone-safe deadline comparison"
     },
     "similar_to": []
@@ -304,7 +304,7 @@
     },
     "pr": {
       "number": 209,
-      "url": "https://github.com/team/understudy/pull/209",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/209",
       "title": "fix: staging Redis URL for Celery"
     },
     "similar_to": [
@@ -338,7 +338,7 @@
     },
     "pr": {
       "number": 214,
-      "url": "https://github.com/team/understudy/pull/214",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/214",
       "title": "fix: stabilize SettingsPage effect deps"
     },
     "similar_to": [
@@ -372,7 +372,7 @@
     },
     "pr": {
       "number": 220,
-      "url": "https://github.com/team/understudy/pull/220",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/220",
       "title": "security: parameterize search SQL"
     },
     "similar_to": []
@@ -405,7 +405,7 @@
     },
     "pr": {
       "number": 226,
-      "url": "https://github.com/team/understudy/pull/226",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/226",
       "title": "fix: null-safe cart summary"
     },
     "similar_to": [
@@ -440,7 +440,7 @@
     },
     "pr": {
       "number": 233,
-      "url": "https://github.com/team/understudy/pull/233",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/233",
       "title": "fix: websocket reconnect backoff"
     },
     "similar_to": []
@@ -473,7 +473,7 @@
     },
     "pr": {
       "number": 240,
-      "url": "https://github.com/team/understudy/pull/240",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/240",
       "title": "fix: CSRF cookie domain for subdomains"
     },
     "similar_to": [
@@ -508,7 +508,7 @@
     },
     "pr": {
       "number": 247,
-      "url": "https://github.com/team/understudy/pull/247",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/247",
       "title": "fix: allow X-Request-Id CORS header"
     },
     "similar_to": [
@@ -543,7 +543,7 @@
     },
     "pr": {
       "number": 252,
-      "url": "https://github.com/team/understudy/pull/252",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/252",
       "title": "fix: avoid stale debounce closure"
     },
     "similar_to": [
@@ -577,7 +577,7 @@
     },
     "pr": {
       "number": 260,
-      "url": "https://github.com/team/understudy/pull/260",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/260",
       "title": "fix: pydantic v2 list Field defaults"
     },
     "similar_to": []
@@ -610,7 +610,7 @@
     },
     "pr": {
       "number": 268,
-      "url": "https://github.com/team/understudy/pull/268",
+      "url": "https://github.com/Shashank-133/Under-Study/pull/268",
       "title": "perf: eager-load incident relations"
     },
     "similar_to": [

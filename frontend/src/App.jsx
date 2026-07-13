@@ -3,6 +3,28 @@ import "./App.css";
 
 const LANGUAGES = ["English", "Hindi", "Tamil", "Telugu"];
 
+/** Dummy credentials for the demo video — not real auth. */
+const DEMO_EMAIL = "demo@understudy.dev";
+const DEMO_PASSWORD = "demo123";
+const AUTH_KEY = "understudy_demo_auth";
+
+function isLoggedIn() {
+  try {
+    return sessionStorage.getItem(AUTH_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setLoggedIn(value) {
+  try {
+    if (value) sessionStorage.setItem(AUTH_KEY, "1");
+    else sessionStorage.removeItem(AUTH_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 const DEMO_MATCH = {
   title: "Cannot read property 'map' of undefined",
   file: "Dashboard.jsx:24",
@@ -215,7 +237,111 @@ function IngestionScreen() {
   );
 }
 
-export default function App() {
+function LoginPage({ onLogin }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  function fillDemo() {
+    setEmail(DEMO_EMAIL);
+    setPassword(DEMO_PASSWORD);
+    setError("");
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    window.setTimeout(() => {
+      if (
+        email.trim().toLowerCase() === DEMO_EMAIL &&
+        password === DEMO_PASSWORD
+      ) {
+        setLoggedIn(true);
+        onLogin();
+      } else {
+        setError("Invalid credentials. Use the demo account shown below.");
+      }
+      setLoading(false);
+    }, 450);
+  }
+
+  return (
+    <div className="login-page">
+      <div className="login-shell">
+        <header className="login-brand">
+          <h1 className="wordmark">Understudy</h1>
+          <p className="tagline">
+            The AI pair-debugger that remembers your team&apos;s <em>mistakes</em>.
+          </p>
+          <span className="tag-pill">HackHazards &apos;26 · Demo login</span>
+        </header>
+
+        <form className="login-panel panel" onSubmit={handleSubmit}>
+          <p className="login-heading">Sign in to team memory</p>
+
+          <label className="panel-label" htmlFor="login-email">
+            Email
+          </label>
+          <input
+            id="login-email"
+            className="login-input"
+            type="email"
+            autoComplete="username"
+            placeholder={DEMO_EMAIL}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
+          />
+
+          <label className="panel-label" htmlFor="login-password">
+            Password
+          </label>
+          <input
+            id="login-password"
+            className="login-input"
+            type="password"
+            autoComplete="current-password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+          />
+
+          {error ? (
+            <p className="login-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <button
+            type="submit"
+            className="btn-primary login-submit"
+            disabled={loading || !email.trim() || !password}
+          >
+            {loading ? "Signing in…" : "Sign in"}
+          </button>
+
+          <div className="demo-creds">
+            <div className="demo-creds-label">Demo credentials</div>
+            <code>
+              {DEMO_EMAIL} / {DEMO_PASSWORD}
+            </code>
+            <button type="button" className="btn-link" onClick={fillDemo}>
+              Fill demo account →
+            </button>
+          </div>
+        </form>
+
+        <p className="login-foot">Demo only — not real authentication</p>
+      </div>
+    </div>
+  );
+}
+
+function MainApp({ onLogout }) {
   const [tab, setTab] = useState("chat");
 
   return (
@@ -224,29 +350,49 @@ export default function App() {
         <div>
           <h1 className="wordmark">Understudy</h1>
           <p className="tagline">
-            The AI pair-debugger that remembers your team's <em>mistakes</em>.
+            The AI pair-debugger that remembers your team&apos;s <em>mistakes</em>.
           </p>
-          <span className="tag-pill">HackHazards '26 · Dev Tools &amp; Infrastructure</span>
+          <span className="tag-pill">HackHazards &apos;26 · Dev Tools &amp; Infrastructure</span>
         </div>
-        <nav className="tab-nav">
-          <button
-            className={tab === "chat" ? "tab tab-active" : "tab"}
-            onClick={() => setTab("chat")}
-          >
-            Chat
+        <div className="header-actions">
+          <nav className="tab-nav">
+            <button
+              className={tab === "chat" ? "tab tab-active" : "tab"}
+              onClick={() => setTab("chat")}
+            >
+              Chat
+            </button>
+            <button
+              className={tab === "ingest" ? "tab tab-active" : "tab"}
+              onClick={() => setTab("ingest")}
+            >
+              Ingestion demo
+            </button>
+          </nav>
+          <button type="button" className="btn-logout" onClick={onLogout}>
+            Sign out
           </button>
-          <button
-            className={tab === "ingest" ? "tab tab-active" : "tab"}
-            onClick={() => setTab("ingest")}
-          >
-            Ingestion demo
-          </button>
-        </nav>
+        </div>
       </header>
 
       {tab === "chat" ? <ChatScreen /> : <IngestionScreen />}
 
-      <footer className="app-footer">Person 1 · Frontend · Understudy — HackHazards '26</footer>
+      <footer className="app-footer">Person 1 · Frontend · Understudy — HackHazards &apos;26</footer>
     </div>
   );
+}
+
+export default function App() {
+  const [authed, setAuthed] = useState(isLoggedIn);
+
+  function handleLogout() {
+    setLoggedIn(false);
+    setAuthed(false);
+  }
+
+  if (!authed) {
+    return <LoginPage onLogin={() => setAuthed(true)} />;
+  }
+
+  return <MainApp onLogout={handleLogout} />;
 }

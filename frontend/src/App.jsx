@@ -1,7 +1,12 @@
 import { useState } from "react";
 import "./App.css";
 
-const LANGUAGES = ["English", "Hindi", "Tamil", "Telugu"];
+const LANGUAGES = [
+  { value: "en", label: "English" },
+  { value: "hi", label: "Hindi" },
+  { value: "ta", label: "Tamil" },
+  { value: "te", label: "Telugu" },
+];
 
 /** Dummy credentials for the demo video — not real auth. */
 const DEMO_EMAIL = "demo@understudy.dev";
@@ -60,29 +65,57 @@ function InitialsBadge({ name }) {
 }
 
 function ConfidenceBar({ value }) {
+  // API sends 0–1; demo fallback may send 0–100
+  const pct = value > 1 ? Math.round(value) : Math.round((value || 0) * 100);
   return (
     <div className="confidence">
       <div className="confidence-track">
-        <div className="confidence-fill" style={{ width: `${value}%` }} />
+        <div className="confidence-fill" style={{ width: `${pct}%` }} />
       </div>
-      <span className="confidence-label">{value}% match</span>
+      <span className="confidence-label">{pct}% match</span>
     </div>
   );
+}
+
+function mapApiToCard(data) {
+  const top = data.similar_incidents?.[0];
+  if (!top && !data.answer) return null;
+
+  return {
+    title: top?.title || "No close match in team memory",
+    file: top?.id || "—",
+    date: top?.pr_url ? "View PR" : "No linked PR",
+    prUrl: top?.pr_url || "",
+    rootCause: data.answer || "No similar incidents found yet.",
+    fix: top?.fix_summary || "Try pasting a fuller stack trace, or ingest this as a new incident.",
+    person: data.ask_person || top?.resolved_by || "—",
+    confidence: data.confidence ?? 0,
+  };
 }
 
 function MemoryCard({ match }) {
   return (
     <div className="memory-card">
-      <div className="stamp">Match found</div>
+      <div className="stamp">{match.confidence > 0.12 ? "Match found" : "No match"}</div>
       <h3 className="card-title">{match.title}</h3>
       <div className="card-meta">
-        {match.file} &nbsp;·&nbsp; {match.date}
+        {match.file}
+        {match.prUrl ? (
+          <>
+            {" · "}
+            <a href={match.prUrl} target="_blank" rel="noreferrer">
+              {match.date}
+            </a>
+          </>
+        ) : (
+          <> &nbsp;·&nbsp; {match.date}</>
+        )}
       </div>
       <p className="card-body">{match.rootCause}</p>
       <pre className="code-block">{match.fix}</pre>
       <div className="card-footer">
         <div className="person-row">
-          <InitialsBadge name={match.person} />
+          <InitialsBadge name={match.person === "—" ? "?" : match.person} />
           <div>
             <div className="person-name">{match.person}</div>
             <div className="person-tag">Suggested — not notified</div>
@@ -114,24 +147,30 @@ function EmptyState() {
 
 function ChatScreen() {
   const [errorText, setErrorText] = useState("");
-  const [language, setLanguage] = useState("English");
+  const [language, setLanguage] = useState("en");
   const [loading, setLoading] = useState(false);
   const [match, setMatch] = useState(null);
+  const [error, setError] = useState(null);
 
   async function handleAsk() {
     if (!errorText.trim()) return;
     setLoading(true);
+    setError(null);
+    setMatch(null);
     try {
       const res = await fetch("/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ error: errorText, language }),
       });
-      if (!res.ok) throw new Error("query failed");
+      if (!res.ok) {
+        const detail = await res.text();
+        throw new Error(`API ${res.status}: ${detail.slice(0, 120)}`);
+      }
       const data = await res.json();
-      setMatch(data);
+      setMatch(mapApiToCard(data) || DEMO_MATCH);
     } catch (e) {
-      setMatch(DEMO_MATCH);
+      setError(e.message || "Could not reach backend on port 8000.");
     }
     setLoading(false);
   }
@@ -148,6 +187,7 @@ function ChatScreen() {
           placeholder={"TypeError: Cannot read property 'map' of undefined\n    at Dashboard.jsx:24"}
           value={errorText}
           onChange={(e) => setErrorText(e.target.value)}
+          disabled={loading}
         />
         <div className="controls-row">
           <div className="field">
@@ -156,20 +196,36 @@ function ChatScreen() {
               id="lang-select"
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
+              disabled={loading}
             >
               {LANGUAGES.map((l) => (
-                <option key={l}>{l}</option>
+                <option key={l.value} value={l.value}>
+                  {l.label}
+                </option>
               ))}
             </select>
           </div>
-          <button className="btn-primary" onClick={handleAsk} disabled={loading}>
+          <button className="btn-primary" onClick={handleAsk} disabled={loading || !errorText.trim()}>
             {loading ? "Searching…" : "Ask Understudy"}
           </button>
         </div>
       </div>
 
       <div className="panel result-panel">
-        {match ? <MemoryCard match={match} /> : <EmptyState />}
+        {loading ? (
+          <div className="empty-state">
+            <p>Searching team memory…</p>
+          </div>
+        ) : error ? (
+          <div className="empty-state">
+            <p>Could not reach Understudy</p>
+            <span>{error}</span>
+          </div>
+        ) : match ? (
+          <MemoryCard match={match} />
+        ) : (
+          <EmptyState />
+        )}
       </div>
     </div>
   );

@@ -5,6 +5,16 @@
 
 ---
 
+## 🔗 Project Links & Resources
+*   🚀 **Live Application:** [understudy-frontend.onrender.com](https://understudy-frontend.onrender.com)
+*   📊 **Presentation Slides (Canva):** [canva.link/yrtag3p2s12cxd2](https://canva.link/yrtag3p2s12cxd2)
+*   ⚙️ **Backend API Endpoint:** [understudy-backend.onrender.com](https://understudy-backend.onrender.com)
+
+> [!WARNING]
+> **Free-Tier Spin-Up Time:** The backend is hosted on Render's free tier. If the application has been idle, the first query or ingestion request may take **1–2 minutes** to wake up the backend container. Subsequent queries will run instantly!
+
+---
+
 ## 💡 The Problem
 In modern engineering teams, junior developers spend hours debugging errors that senior developers have already resolved. The context and solutions to these bugs are buried deep inside closed Pull Requests, forgotten Slack threads, and legacy issues. This leads to **wasted time, repeated mistakes, and high developer friction.**
 

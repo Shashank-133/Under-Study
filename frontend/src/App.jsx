@@ -54,6 +54,8 @@ const DEMO_LEDGER = [
   },
 ];
 
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 function InitialsBadge({ name }) {
   const initials = name
     .split(" ")
@@ -158,7 +160,7 @@ function ChatScreen() {
     setError(null);
     setMatch(null);
     try {
-      const res = await fetch("/query", {
+      const res = await fetch(`${API_URL}/query`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ error: errorText, language }),
@@ -244,7 +246,7 @@ function IngestionScreen() {
       time: new Date().toLocaleString(),
     };
     try {
-      const res = await fetch("/ingest", {
+      const res = await fetch(`${API_URL}/ingest`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ raw: incidentText }),

@@ -106,7 +106,3 @@ Open your browser and navigate to `http://localhost:5173/`.
 
 ---
 
-## 👥 Hackathon Team (HackHazards '26)
-*   **Person 1 (Frontend):** React components, ingestion portal, language toggles, state integration.
-*   **Person 2 (Backend):** FastAPI routes, Neo4j schema connections, Cypher queries, fallback handlers.
-*   **Person 3 (AI):** Sarvam extraction models, answer synthesis generators, translations masking logic, embeddings.

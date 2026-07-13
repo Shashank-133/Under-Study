@@ -7,5 +7,11 @@ requests>=2.32.0
 
 # Local embedding model used by embeddings.py for real similarity scoring.
 # First run downloads the ~80MB "all-MiniLM-L6-v2" model and caches it locally.
-sentence-transformers>=3.0.0
-numpy>=1.26.0
+
+
+
+
+# (Commented out to bypass the Windows 260-character path limit caused by deep torch nesting)
+# sentence-transformers>=3.0.0
+# numpy>=1.26.0
+
